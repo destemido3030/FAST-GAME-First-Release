@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAST GAME | First Release</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #ff0000; --bg: #050505; --card: rgba(20, 20, 20, 0.9); --text: #ffffff; --green: #00ff88; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background: var(--bg); 
+            background-image: radial-gradient(circle at top right, #2a0000, #050505);
+            color: var(--text); min-height: 100vh; overflow-x: hidden;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        
+        header {
+            display: none; justify-content: space-between; align-items: center;
+            background: rgba(0, 0, 0, 0.9); padding: 0.8rem 5%;
+            backdrop-filter: blur(15px); border-bottom: 1px solid var(--primary);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        /* Estilos da Logo SVG no Header */
+        .logo-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .logo-svg { height: 40px; width: auto; filter: drop-shadow(0 0 5px rgba(255,0,0,0.6)); }
+        .logo-text { font-weight: 800; letter-spacing: 2px; color: var(--text); font-size: 1.2rem; }
+        .logo-text span { color: var(--primary); }
+
+        .saldo-display { border: 1px solid var(--green); padding: 6px 16px; border-radius: 4px; color: var(--green); font-weight: 800; font-size: 0.9rem; }
+
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+            background: #080808; z-index: 1000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-right: 1px solid var(--primary); padding-top: 80px;
+        }
+        .sidebar.active { left: 0; }
+        .sidebar-item { padding: 20px 40px; font-size: 0.8rem; color: #888; cursor: pointer; text-transform: uppercase; transition: 0.3s; letter-spacing: 1px; }
+        .sidebar-item:hover { color: var(--text); background: rgba(255, 0, 0, 0.1); border-left: 4px solid var(--primary); }
+
+        .auth-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .auth-card { 
+            background: var(--card); padding: 40px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.05); 
+            width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        /* Logo maior na tela de login */
+        .login-logo-svg { height: 80px; width: auto; margin-bottom: 10px; filter: drop-shadow(0 0 10px rgba(255,0,0,0.7)); }
+
+        input { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #222; border-radius: 6px; color: white; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(255, 0, 0, 0.2); }
+        
+        .btn { 
+            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 6px; 
+            font-weight: 800; cursor: pointer; color: white; margin-top: 15px; 
+            text-transform: uppercase; letter-spacing: 2px; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); }
+
+        .container { display: none; padding: 40px 5%; animation: fadeIn 0.6s ease; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; }
+        .game-card { background: #0f0f0f; border-radius: 12px; overflow: hidden; border: 1px solid #1a1a1a; transition: 0.3s; }
+        .game-card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .img-container { height: 160px; overflow: hidden; background: #111; position: relative; }
+        .img-container img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .game-card:hover .img-container img { transform: scale(1.1); }
+
+        .custom-modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.92); z-index: 5000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+        .modal-box { 
+            background: #0a0a0a; border: 1px solid #333; padding: 30px; 
+            border-radius: 20px; width: 90%; max-width: 420px; text-align: center;
+            max-height: 90vh; overflow-y: auto;
+        }
+
+        .price-item { background: #151515; padding: 15px; border-radius: 10px; cursor: pointer; border: 1px solid #222; transition: 0.3s; margin-bottom: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        .price-item:hover { border-color: var(--green); background: #1a1a1a; }
+        
+        #admin-input { border-color: #333; text-align: center; font-size: 1.2rem; letter-spacing: 5px; }
+        .error-shake { animation: shake 0.4s ease-in-out; border-color: var(--primary) !important; }
+    </style>
+</head>
+<body onload="inicializar()">
+
+<audio id="snd-click" src="https://www.soundjay.com/buttons/sounds/button-16.mp3" preload="auto"></audio>
+<audio id="snd-success" src="https://www.soundjay.com/buttons/sounds/button-09.mp3" preload="auto"></audio>
+<audio id="snd-money" src="https://www.soundjay.com/misc/sounds/cash-register-05.mp3" preload="auto"></audio>
+<audio id="snd-error" src="https://www.soundjay.com/buttons/sounds/button-11.mp3" preload="auto"></audio>
+
+<div id="overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;z-index:999;" onclick="toggleMenu()"></div>
+
+<div id="alert-modal" class="custom-modal">
+    <div class="modal-box">
+        <h2 id="alert-title" style="color:var(--primary); margin-bottom: 10px;">AVISO</h2>
+        <div id="alert-msg" style="color:#aaa; margin-bottom: 25px;"></div>
+        <button class="btn" onclick="closeAlert()">VOLTAR</button>
+    </div>
+</div>
+
+<div id="admin-modal" class="custom-modal">
+    <div id="admin-box" class="modal-box" style="border: 2px solid var(--primary); box-shadow: 0 0 30px rgba(255,0,0,0.2);">
+        <h2 style="color:var(--primary); margin-bottom: 10px;">🔐 SEGURANÇA</h2>
+        <p id="admin-info" style="color:#666; font-size: 0.8rem; margin-bottom: 20px;">AUTORIZAÇÃO DO ADMINISTRADOR</p>
+        <input type="password" id="admin-input" placeholder="••••••">
+        <div id="admin-error-msg" style="color:var(--primary); font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; display: none;">CHAVE INCORRETA!</div>
+        <button class="btn" onclick="validarAdmin()">CONFIRMAR DEPÓSITO</button>
+        <button class="btn" style="background:#222; margin-top:10px;" onclick="fecharAdmin()">CANCELAR</button>
+    </div>
+</div>
+
+<div id="buy-modal" class="custom-modal">
+    <div class="modal-box" style="border-color: var(--green);">
+        <h2 style="color:var(--green); margin-bottom: 15px;">CONFIRMAR COMPRA</h2>
+        <p id="buy-details" style="line-height: 1.6; margin-bottom: 20px;"></p>
+        <button class="btn" id="buy-confirm-btn" style="background:var(--green); color:black;">CONCLUIR</button>
+        <button class="btn" style="background:#222; margin-top:10px;" onclick="closeBuyModal()">CANCELAR</button>
+    </div>
+</div>
+
+<header id="main-header">
+    <div style="cursor:pointer; font-weight: 800; color: var(--primary);" onclick="toggleMenu()">☰ MENU</div>
+    
+    <div class="logo-container" onclick="abrir('loja')">
+        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 5 L90 25 L90 65 L50 95 L10 65 L10 25 Z" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+            <path d="M65 35 C60 30, 40 30, 35 35 C25 45, 25 65, 35 75 C45 85, 65 80, 70 70 L70 55 L50 55" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+            <path d="M45 10 L60 45 L40 45 L55 90" fill="none" stroke="#ff0000" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+                <animate attributeName="stroke-opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+            </path>
+        </svg>
+        <div class="logo-text">FAST<span>GAME</span></div>
+    </div>
+    
+    <div class="saldo-display">R$ <span id="saldo">0.00</span></div>
+</header>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-item" onclick="abrir('loja')">LOJA VIRTUAL</div>
+    <div class="sidebar-item" onclick="abrir('deposito')">ADICIONAR SALDO</div>
+    <div class="sidebar-item" onclick="abrir('perfil')">MEUS PINS</div>
+    <div class="sidebar-item" onclick="abrir('sobre')">SOBRE NÓS</div>
+    <div class="sidebar-item" onclick="abrir('suporte')">SUPORTE</div>
+    <div class="sidebar-item" onclick="sair()" style="margin-top: 60px; color: #444;">LOGOUT</div>
+</div>
+
+<div id="auth-section" class="auth-container">
+    <div id="login-box" class="auth-card">
+        
+        <svg class="login-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 5 L90 25 L90 65 L50 95 L10 65 L10 25 Z" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+            <path d="M65 35 C60 30, 40 30, 35 35 C25 45, 25 65, 35 75 C45 85, 65 80, 70 70 L70 55 L50 55" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+            <path d="M45 10 L60 45 L40 45 L55 90" fill="none" stroke="#ff0000" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1 style="color:var(--text); margin-bottom:5px; font-size: 1.5rem;">FAST<span style="color:var(--primary)">GAME</span></h1>
+        
+        <p style="font-size: 0.7rem; color: #555; letter-spacing: 2px; margin-bottom: 30px;">FIRST RELEASE</p>
+        <input type="text" id="l-user" placeholder="USUÁRIO">
+        <input type="password" id="l-pass" placeholder="SENHA">
+        <button class="btn" onclick="logar()">ACESSAR SISTEMA</button>
+        <p onclick="alternarAuth('reg')" style="margin-top:25px; cursor:pointer; color:#666; font-size:0.75rem;">NÃO É MEMBRO? REGISTRE-SE</p>
+    </div>
+
+    <div id="reg-box" class="auth-card" style="display:none;">
+        <h1 style="color:var(--primary); margin-bottom:20px;">REGISTRO</h1>
+        <input type="text" id="r-user" placeholder="ESCOLHA O USUÁRIO">
+        <input type="password" id="r-pass" placeholder="CRIE SUA SENHA">
+        <button class="btn" onclick="cadastrar()">CRIAR CONTA AGORA</button>
+        <p onclick="alternarAuth('login')" style="margin-top:25px; cursor:pointer; color:#666; font-size:0.75rem;">JÁ TENHO CONTA</p>
+    </div>
+</div>
+
+<main id="loja" class="container">
+    <div class="cards-grid" id="grid-jogos"></div>
+</main>
+
+<main id="deposito" class="container">
+    <div style="max-width:400px; margin:auto; text-align:center;">
+        <h2 style="margin-bottom:30px;">RECARGA PIX</h2>
+        <input type="number" id="v-dep" placeholder="VALOR EM R$">
+        <button class="btn" style="background:var(--green); color:black;" onclick="gerarPix()">GERAR QR CODE</button>
+        <div id="area-pix" style="display:none; margin-top:30px; background:#111; padding:25px; border-radius:15px; border:1px solid #222;">
+            <p style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">ESCANEIE E PAGUE</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=FastGamePayment" style="filter:invert(1); margin-bottom:20px;">
+            <p style="font-size: 0.6rem; color: #444; margin-bottom: 20px;">Confirmação via admin.</p>
+            <button class="btn" onclick="abrirPainelAdmin()">PAGO ✓</button>
+        </div>
+    </div>
+</main>
+
+<main id="perfil" class="container">
+    <h2 style="text-align:center; margin-bottom:30px;">MEUS PRODUTOS</h2>
+    <div id="lista-pins" style="max-width:500px; margin:auto;"></div>
+</main>
+
+<main id="sobre" class="container">
+    <div style="max-width:600px; margin:auto; text-align:center; line-height: 1.6;">
+        <h2 style="color:var(--primary); margin-bottom:20px;">SOBRE A FAST GAME</h2>
+        <p style="color:#aaa; margin-bottom:15px;">Plataforma de entrega automática de créditos para jogos.</p>
+    </div>
+</main>
+
+<main id="suporte" class="container">
+    <div style="max-width:400px; margin:auto; text-align:center;">
+        <h2 style="margin-bottom:20px;">CENTRAL DE AJUDA</h2>
+        <div class="support-box">
+            <p style="font-size:0.8rem; color:#666; margin-bottom:5px;">E-MAIL OFICIAL</p>
+            <b style="color:var(--primary)">suporte@fastgame.com</b>
+        </div>
+        <button class="btn" style="background:#25D366; color:white;" onclick="window.open('https://wa.me/5500000000000')">WHATSAPP SUPORTE</button>
+    </div>
+</main>
+
+<script>
+    let usuarioAtivo = null;
+    let valorPendente = 0;
+    const SENHA_ADMIN = "ADMIN123";
+
+    const pacotes = [
+        { preco: 10, qtd: { "Free Fire": "200 Dimas", "Clash Royale": "500 Gemas", "Roblox": "210 Robux", "eFootball": "300 Moedas", "Discord Nitro": "Basic", "FIFA": "100 FC Points", "Call of Duty": "200 CP" } },
+        { preco: 20, qtd: { "Free Fire": "550 Dimas", "Clash Royale": "1200 Gemas", "Roblox": "450 Robux", "eFootball": "700 Moedas", "Discord Nitro": "Classic", "FIFA": "250 FC Points", "Call of Duty": "500 CP" } },
+        { preco: 50, qtd: { "Free Fire": "1600 Dimas", "Clash Royale": "3500 Gemas", "Roblox": "1200 Robux", "eFootball": "2100 Moedas", "Discord Nitro": "Nitro", "FIFA": "750 FC Points", "Call of Duty": "1100 CP" } },
+        { preco: 100, qtd: { "Free Fire": "3500 Dimas", "Clash Royale": "8000 Gemas", "Roblox": "2500 Robux", "eFootball": "4500 Moedas", "Discord Nitro": "Anual", "FIFA": "1600 FC Points", "Call of Duty": "2400 CP" } }
+    ];
+
+    const jogos = [
+        { n: "Free Fire", i: "free-fire.jpg" },
+        { n: "Clash Royale", i: "clash.jpg" },
+        { n: "Roblox", i: "roblox.jpg" },
+        { n: "eFootball", i: "efootball.jpg" },
+        { n: "Discord Nitro", i: "discord.jpg" },
+        { n: "FIFA", i: "fifa.jpg" },
+        { n: "Call of Duty", i: "callofduty.jpg" }
+    ];
+
+    function playSnd(id) { const s = document.getElementById(id); if(s) { s.currentTime = 0; s.play(); } }
+
+    function showAlert(title, msg, color = "#ff0000") {
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-title').style.color = color;
+        document.getElementById('alert-msg').innerHTML = msg;
+        document.getElementById('alert-modal').style.display = 'flex';
+    }
+    function closeAlert() { playSnd('snd-click'); document.getElementById('alert-modal').style.display = 'none'; }
+
+    function abrirPainelAdmin() {
+        playSnd('snd-click');
+        document.getElementById('admin-input').value = "";
+        document.getElementById('admin-error-msg').style.display = 'none';
+        document.getElementById('admin-box').classList.remove('error-shake');
+        document.getElementById('admin-modal').style.display = 'flex';
+    }
+
+    function fecharAdmin() { playSnd('snd-click'); document.getElementById('admin-modal').style.display = 'none'; }
+    
+    function validarAdmin() {
+        const pass = document.getElementById('admin-input').value;
+        if(pass === SENHA_ADMIN) {
+            fecharAdmin();
+            playSnd('snd-money');
+            usuarioAtivo.saldo += valorPendente;
+            valorPendente = 0;
+            document.getElementById('area-pix').style.display = 'none';
+            atualizarSaldo();
+            showAlert("SUCESSO!", "Saldo adicionado.", "#00ff88");
+        } else {
+            playSnd('snd-error');
+            document.getElementById('admin-error-msg').style.display = 'block';
+            document.getElementById('admin-box').classList.add('error-shake');
+            setTimeout(() => { document.getElementById('admin-box').classList.remove('error-shake'); }, 400);
+        }
+    }
+
+    function inicializar() {
+        const grid = document.getElementById('grid-jogos');
+        grid.innerHTML = "";
+        jogos.forEach(j => {
+            grid.innerHTML += `
+                <div class="game-card">
+                    <div class="img-container">
+                        <img src="${j.i}" onerror="this.src='https://via.placeholder.com/400x200/111/fff?text=${j.n}'">
+                    </div>
+                    <div class="game-info" style="padding:15px; text-align:center;">
+                        <h4 style="margin-bottom:15px; font-size: 0.9rem; letter-spacing:1px;">${j.n.toUpperCase()}</h4>
+                        <button class="btn" style="padding:10px; font-size:0.65rem;" onclick="abrirOpcoes('${j.n}')">VER PACOTES</button>
+                    </div>
+                </div>`;
+        });
+
+        const session = localStorage.getItem('fg_session');
+        if(session) {
+            usuarioAtivo = JSON.parse(localStorage.getItem('user_' + session));
+            if(usuarioAtivo) entrarNoSistema();
+        }
+    }
+
+    function alternarAuth(tipo) {
+        playSnd('snd-click');
+        document.getElementById('login-box').style.display = tipo === 'login' ? 'block' : 'none';
+        document.getElementById('reg-box').style.display = tipo === 'reg' ? 'block' : 'none';
+    }
+
+    function cadastrar() {
+        const u = document.getElementById('r-user').value.trim();
+        const p = document.getElementById('r-pass').value.trim();
+        if(!u || !p) return showAlert("ERRO", "Preencha tudo!");
+        localStorage.setItem('user_' + u, JSON.stringify({ user: u, pass: p, saldo: 0, pins: [] }));
+        playSnd('snd-success');
+        showAlert("SUCESSO", "Conta criada!", "#00ff88");
+        alternarAuth('login');
+    }
+
+    function logar() {
+        const u = document.getElementById('l-user').value.trim();
+        const p = document.getElementById('l-pass').value.trim();
+        const stored = localStorage.getItem('user_' + u);
+        if(!stored) return showAlert("ERRO", "Usuário inválido.");
+        const parsed = JSON.parse(stored);
+        if(parsed.pass === p) {
+            usuarioAtivo = parsed;
+            localStorage.setItem('fg_session', u);
+            playSnd('snd-success');
+            entrarNoSistema();
+        } else { showAlert("ERRO", "Senha inválida."); }
+    }
+
+    function entrarNoSistema() {
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('main-header').style.display = 'flex';
+        abrir('loja');
+        atualizarSaldo();
+    }
+
+    function abrir(id) {
+        playSnd('snd-click');
+        document.querySelectorAll('main').forEach(m => m.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if(id === 'perfil') renderPins();
+        toggleMenu(false);
+    }
+
+    function toggleMenu(force) {
+        const side = document.getElementById('sidebar');
+        const over = document.getElementById('overlay');
+        const active = force !== undefined ? force : !side.classList.contains('active');
+        side.classList.toggle('active', active);
+        over.style.display = active ? 'block' : 'none';
+    }
+
+    function atualizarSaldo() {
+        if(!usuarioAtivo) return;
+        document.getElementById('saldo').innerText = usuarioAtivo.saldo.toFixed(2);
+        localStorage.setItem('user_' + usuarioAtivo.user, JSON.stringify(usuarioAtivo));
+    }
+
+    function abrirOpcoes(nome) {
+        playSnd('snd-click');
+        let opcoesHtml = `<p style="margin-bottom:15px; font-size:0.8rem;">Pacotes para ${nome}:</p>`;
+        pacotes.forEach(p => {
+            opcoesHtml += `<div class="price-item" onclick="confirmarCompra('${nome}', ${p.preco}, '${p.qtd[nome]}')">
+                <div>
+                    <div style="font-weight:800; color:#fff;">${p.qtd[nome]}</div>
+                    <div style="font-size:0.7rem; color:#666;">Envio Automático</div>
+                </div>
+                <b style="color:var(--green)">R$ ${p.preco},00</b>
+            </div>`;
+        });
+        showAlert(nome.toUpperCase(), opcoesHtml, "#fff");
+    }
+
+    function confirmarCompra(jogo, preco, qtd) {
+        playSnd('snd-click');
+        closeAlert();
+        if(!usuarioAtivo) return abrir('loja');
+        document.getElementById('buy-details').innerHTML = `ITEM: <b>${qtd}</b><br>PREÇO: <b>R$ ${preco},00</b>`;
+        document.getElementById('buy-confirm-btn').onclick = () => {
+            if(usuarioAtivo.saldo >= preco) {
+                usuarioAtivo.saldo -= preco;
+                const pin = "FG-" + Math.random().toString(36).substring(2, 12).toUpperCase();
+                usuarioAtivo.pins.push({ jogo, qtd, pin, data: new Date().toLocaleDateString() });
+                atualizarSaldo();
+                closeBuyModal();
+                playSnd('snd-success');
+                showAlert("SUCESSO", "PIN disponível no perfil!", "#00ff88");
+            } else { closeBuyModal(); showAlert("SEM SALDO", "Adicione saldo via PIX."); abrir('deposito'); }
+        };
+        document.getElementById('buy-modal').style.display = 'flex';
+    }
+    
+    function closeBuyModal() { playSnd('snd-click'); document.getElementById('buy-modal').style.display = 'none'; }
+
+    function gerarPix() {
+        const v = parseFloat(document.getElementById('v-dep').value);
+        if(v > 0) { playSnd('snd-click'); valorPendente = v; document.getElementById('area-pix').style.display = 'block'; }
+    }
+
+    function renderPins() {
+        if(!usuarioAtivo) return;
+        const div = document.getElementById('lista-pins');
+        div.innerHTML = usuarioAtivo.pins.length ? "" : "<p style='opacity:0.2;text-align:center;margin-top:50px;'>Sem produtos.</p>";
+        usuarioAtivo.pins.forEach(p => {
+            div.innerHTML += `<div style="background:#111;padding:20px;border-radius:15px;margin-bottom:15px;border:1px solid #222;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><b>${p.jogo}</b><small style="color:#666">${p.data}</small></div>
+                <div style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">${p.qtd}</div>
+                <div style="background:#000; padding:12px; border:1px solid var(--green); color:var(--green); font-family:monospace; font-size:1.1rem; text-align:center; border-radius:8px;">${p.pin}</div>
+            </div>`;
+        });
+    }
+
+    function sair() { localStorage.removeItem('fg_session'); location.reload(); }
+</script>
+
+</body>
+</html>
